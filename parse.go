@@ -254,7 +254,7 @@ func NewParser(config Config, dests ...interface{}) (*Parser, error) {
 	for i, dest := range dests {
 		t := reflect.TypeOf(dest)
 		if t.Kind() != reflect.Ptr {
-			panic(fmt.Sprintf("%s is not a pointer (did you forget an ampersand?)", t))
+			return nil, &NotPointerError{Type: t}
 		}
 
 		cmd, err := cmdFromStruct(name, path{root: i}, t, &config)

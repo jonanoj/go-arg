@@ -741,11 +741,10 @@ func TestHelpFlag(t *testing.T) {
 	assert.Equal(t, ErrHelp, err)
 }
 
-func TestPanicOnNonPointer(t *testing.T) {
+func TestErrorOnNonPointer(t *testing.T) {
 	var args struct{}
-	assert.Panics(t, func() {
-		_ = parse("", args)
-	})
+	err := parse("", args)
+	assert.Error(t, err)
 }
 
 func TestErrorOnNonStruct(t *testing.T) {

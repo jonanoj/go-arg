@@ -149,3 +149,13 @@ type SubcommandNotFoundError struct {
 func (e *SubcommandNotFoundError) Error() string {
 	return fmt.Sprintf("%q is not a subcommand of %s", e.Name, e.CmdName)
 }
+
+// NotPointerError is returned when a non-pointer is passed to NewParser or Parse, which require a pointer to a struct as their argument.
+// This typically means you forgot to use an ampersand (&) when passing your struct.
+type NotPointerError struct {
+	Type reflect.Type
+}
+
+func (e *NotPointerError) Error() string {
+	return fmt.Sprintf("%s is not a pointer (did you forget an ampersand?)", e.Type)
+}
