@@ -274,7 +274,7 @@ func NewParser(config Config, dests ...interface{}) (*Parser, error) {
 			if m, ok := v.Interface().(encoding.TextMarshaler); ok {
 				s, err := m.MarshalText()
 				if err != nil {
-					return nil, fmt.Errorf("%v: error marshaling default value to string: %v", spec.dest, err)
+					return nil, fmt.Errorf("%v: error marshaling default value to string: %w", spec.dest, err)
 				}
 				spec.defaultString = string(s)
 			} else {
@@ -604,7 +604,7 @@ func (p *Parser) captureEnvVars(specs []*spec, wasPresent map[*spec]bool) error 
 				values, err = csv.NewReader(strings.NewReader(value)).Read()
 				if err != nil {
 					return fmt.Errorf(
-						"error reading a CSV string from environment variable %s with multiple values: %v",
+						"error reading a CSV string from environment variable %s with multiple values: %w",
 						spec.env,
 						err,
 					)
@@ -612,14 +612,14 @@ func (p *Parser) captureEnvVars(specs []*spec, wasPresent map[*spec]bool) error 
 			}
 			if err = setSliceOrMap(p.val(spec.dest), values, !spec.separate); err != nil {
 				return fmt.Errorf(
-					"error processing environment variable %s with multiple values: %v",
+					"error processing environment variable %s with multiple values: %w",
 					spec.env,
 					err,
 				)
 			}
 		} else {
 			if err := scalar.ParseValue(p.val(spec.dest), value); err != nil {
-				return fmt.Errorf("error processing environment variable %s: %v", spec.env, err)
+				return fmt.Errorf("error processing environment variable %s: %w", spec.env, err)
 			}
 		}
 		wasPresent[spec] = true
@@ -753,7 +753,7 @@ func (p *Parser) process(args []string) error {
 			}
 			err := setSliceOrMap(p.val(spec.dest), values, !spec.separate)
 			if err != nil {
-				return fmt.Errorf("error processing %s: %v", arg, err)
+				return fmt.Errorf("error processing %s: %w", arg, err)
 			}
 			continue
 		}
@@ -778,7 +778,7 @@ func (p *Parser) process(args []string) error {
 
 		err := scalar.ParseValue(p.val(spec.dest), value)
 		if err != nil {
-			return fmt.Errorf("error processing %s: %v", arg, err)
+			return fmt.Errorf("error processing %s: %w", arg, err)
 		}
 	}
 
@@ -794,13 +794,13 @@ func (p *Parser) process(args []string) error {
 		if spec.cardinality == multiple {
 			err := setSliceOrMap(p.val(spec.dest), positionals, true)
 			if err != nil {
-				return fmt.Errorf("error processing %s: %v", spec.placeholder, err)
+				return fmt.Errorf("error processing %s: %w", spec.placeholder, err)
 			}
 			positionals = nil
 		} else {
 			err := scalar.ParseValue(p.val(spec.dest), positionals[0])
 			if err != nil {
-				return fmt.Errorf("error processing %s: %v", spec.placeholder, err)
+				return fmt.Errorf("error processing %s: %w", spec.placeholder, err)
 			}
 			positionals = positionals[1:]
 		}
