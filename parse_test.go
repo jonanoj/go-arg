@@ -441,6 +441,28 @@ func TestCustomPlaceholderFormatter(t *testing.T) {
 	assert.Contains(t, output, "<max-jobs>")
 }
 
+func TestCustomLongNameFormatter(t *testing.T) {
+	var args struct {
+		MaxJobs    int `arg:"-j"`
+		OtherField int
+	}
+	config := Config{
+		LongNameFormatter: func(fieldName string) string {
+			if fieldName == "MaxJobs" {
+				return "max-jobs"
+			}
+			return fieldName
+		},
+	}
+	p, err := NewParser(config, &args)
+	require.NoError(t, err)
+	help := &strings.Builder{}
+	p.WriteHelp(help)
+	output := help.String()
+	assert.Contains(t, output, "--max-jobs MAX-JOBS")
+	assert.Contains(t, output, "--OtherField OTHERFIELD")
+}
+
 func TestNoLongName(t *testing.T) {
 	var args struct {
 		ShortOnly string `arg:"-s,--"`

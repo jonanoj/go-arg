@@ -142,6 +142,9 @@ type Config struct {
 	// DefaultEnvName provides the default environment variable name for each field (can be overwritten with an `env` tag).
 	DefaultEnvName func(field reflect.StructField) string
 
+	// LongNameFormatter allows customizing the long option name (e.g., kebab-case, snake_case, etc.)
+	LongNameFormatter func(fieldName string) string
+
 	// PlaceholderFormatter allows the user to customize the placeholder string used in help text for each field.
 	// By default, the placeholder is the uppercase version of the long name if it exists, otherwise the uppercase version of the field name.
 	PlaceholderFormatter func(fieldName string, long string) string
@@ -315,7 +318,7 @@ func upperCaseFromFieldName(field reflect.StructField) string {
 	return strings.ToUpper(field.Name)
 }
 
-func placeholderFromFieldName(fieldName string, long string) string {
+func placeholderFromFieldName(fieldName, long string) string {
 	if long != "" {
 		return strings.ToUpper(long)
 	}
@@ -369,10 +372,18 @@ func cmdFromStruct(name string, dest path, t reflect.Type, config *Config) (*com
 
 		// duplicate the entire path to avoid slice overwrites
 		subdest := dest.Child(field)
+
+		var long string
+		if config.LongNameFormatter != nil {
+			long = config.LongNameFormatter(field.Name)
+		} else {
+			long = strings.ToLower(field.Name)
+		}
+
 		spec := spec{
 			dest:      subdest,
 			field:     field,
-			long:      strings.ToLower(field.Name),
+			long:      long,
 			fieldName: field.Name,
 		}
 
