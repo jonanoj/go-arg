@@ -1974,3 +1974,41 @@ func TestNoPositionalMapAfterPositionalMap(t *testing.T) {
 	_, err := NewParser(Config{}, &args)
 	assert.Error(t, err)
 }
+
+func TestReservedHelpNames(t *testing.T) {
+	t.Run("reserved long name from tag", func(t *testing.T) {
+		var args struct {
+			ArgName string `arg:"--help"`
+		}
+		_, err := NewParser(Config{}, &args)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "--help is a reserved long argument name")
+	})
+
+	t.Run("reserved long name", func(t *testing.T) {
+		var args struct {
+			Help string
+		}
+		_, err := NewParser(Config{}, &args)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "--help is a reserved long argument name")
+	})
+
+	t.Run("reserved short name from tag", func(t *testing.T) {
+		var args struct {
+			ArgName string `arg:"-h"`
+		}
+		_, err := NewParser(Config{}, &args)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "-h is a reserved short argument name")
+	})
+
+	t.Run("reserved short name", func(t *testing.T) {
+		var args struct {
+			H string `arg:"-h"`
+		}
+		_, err := NewParser(Config{}, &args)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "-h is a reserved short argument name")
+	})
+}

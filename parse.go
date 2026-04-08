@@ -474,6 +474,16 @@ func cmdFromStruct(name string, dest path, t reflect.Type, config *Config) (*com
 			}
 		}
 
+		if spec.long == "help" {
+			errs = append(errs, fmt.Sprintf("%s.%s: --help is a reserved long argument name", t.Name(), field.Name))
+			return false
+		}
+
+		if spec.short == "h" {
+			errs = append(errs, fmt.Sprintf("%s.%s: -h is a reserved short argument name", t.Name(), field.Name))
+			return false
+		}
+
 		// placeholder is the string used in the help text like this: "--somearg PLACEHOLDER"
 		placeholder, hasPlaceholder := field.Tag.Lookup("placeholder")
 		if hasPlaceholder {
