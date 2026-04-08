@@ -249,7 +249,7 @@ func NewParser(config Config, dests ...interface{}) (*Parser, error) {
 			panic(fmt.Sprintf("%s is not a pointer (did you forget an ampersand?)", t))
 		}
 
-		cmd, err := cmdFromStruct(name, path{root: i}, t, config.EnvPrefix, config.DefaultEnvName, config.AllHaveEnv)
+		cmd, err := cmdFromStruct(name, path{root: i}, t, &config)
 		if err != nil {
 			return nil, err
 		}
@@ -310,9 +310,9 @@ func upperCaseFromFieldName(field reflect.StructField) string {
 	return strings.ToUpper(field.Name)
 }
 
-func cmdFromStruct(name string, dest path, t reflect.Type, envPrefix string, defaultEnvName func(reflect.StructField) string, allHaveEnv bool) (*command, error) {
-	if defaultEnvName == nil {
-		defaultEnvName = upperCaseFromFieldName
+func cmdFromStruct(name string, dest path, t reflect.Type, config *Config) (*command, error) {
+	if config.DefaultEnvName == nil {
+		config.DefaultEnvName = upperCaseFromFieldName
 	}
 
 	// commands can only be created from pointers to structs
@@ -360,8 +360,8 @@ func cmdFromStruct(name string, dest path, t reflect.Type, envPrefix string, def
 		}
 
 		// assign a default environment variable name
-		if allHaveEnv {
-			spec.env = envPrefix + defaultEnvName(field)
+		if config.AllHaveEnv {
+			spec.env = config.EnvPrefix + config.DefaultEnvName(field)
 		}
 
 		help, exists := field.Tag.Lookup("help")
@@ -411,9 +411,9 @@ func cmdFromStruct(name string, dest path, t reflect.Type, envPrefix string, def
 			case key == "env":
 				// Use override name if provided
 				if value != "" {
-					spec.env = envPrefix + value
+					spec.env = config.EnvPrefix + value
 				} else {
-					spec.env = envPrefix + defaultEnvName(field)
+					spec.env = config.EnvPrefix + config.DefaultEnvName(field)
 				}
 			case key == "subcommand":
 				// decide on a name for the subcommand
@@ -428,7 +428,7 @@ func cmdFromStruct(name string, dest path, t reflect.Type, envPrefix string, def
 				}
 
 				// parse the subcommand recursively
-				subcmd, err := cmdFromStruct(cmdnames[0], subdest, field.Type, envPrefix, defaultEnvName, allHaveEnv)
+				subcmd, err := cmdFromStruct(cmdnames[0], subdest, field.Type, config)
 				if err != nil {
 					errs = append(errs, err.Error())
 					return false
