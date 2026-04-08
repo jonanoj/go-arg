@@ -415,6 +415,32 @@ func TestPlaceholder(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestCustomPlaceholderFormatter(t *testing.T) {
+	var args struct {
+		Input    string   `arg:"positional"`
+		Output   []string `arg:"positional"`
+		Optimize int      `arg:"-O"`
+		MaxJobs  int      `arg:"-j"`
+	}
+	config := Config{
+		PlaceholderFormatter: func(field, long string) string {
+			if field == "MaxJobs" {
+				return "<max-jobs>"
+			}
+			return "<" + field + ">"
+		},
+	}
+	p, err := NewParser(config, &args)
+	require.NoError(t, err)
+	help := &strings.Builder{}
+	p.WriteHelp(help)
+	output := help.String()
+	assert.Contains(t, output, "<Input>")
+	assert.Contains(t, output, "<Output>")
+	assert.Contains(t, output, "<Optimize>")
+	assert.Contains(t, output, "<max-jobs>")
+}
+
 func TestNoLongName(t *testing.T) {
 	var args struct {
 		ShortOnly string `arg:"-s,--"`

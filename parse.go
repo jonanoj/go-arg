@@ -47,6 +47,7 @@ type spec struct {
 	dest          path
 	field         reflect.StructField // the struct field from which this option was created
 	long          string              // the --long form for this option, or empty if none
+	fieldName     string              // the original field name (with casing)
 	short         string              // the -s short form for this option, or empty if none
 	cardinality   cardinality         // determines how many tokens will be present (possible values: zero, one, multiple)
 	required      bool                // if true, this option must be present on the command line
@@ -140,6 +141,10 @@ type Config struct {
 
 	// DefaultEnvName provides the default environment variable name for each field (can be overwritten with an `env` tag).
 	DefaultEnvName func(field reflect.StructField) string
+
+	// PlaceholderFormatter allows the user to customize the placeholder string used in help text for each field.
+	// By default, the placeholder is the uppercase version of the long name if it exists, otherwise the uppercase version of the field name.
+	PlaceholderFormatter func(fieldName string, long string) string
 
 	// AllHaveEnv instructs the library to assign an environment variable to all fields.
 	// By default, the environment variable would be the name of the field converted to uppercase. Use DefaultEnvName to dynamically set the name of the environment variables instead.
@@ -310,9 +315,20 @@ func upperCaseFromFieldName(field reflect.StructField) string {
 	return strings.ToUpper(field.Name)
 }
 
+func placeholderFromFieldName(fieldName string, long string) string {
+	if long != "" {
+		return strings.ToUpper(long)
+	}
+	return strings.ToUpper(fieldName)
+}
+
 func cmdFromStruct(name string, dest path, t reflect.Type, config *Config) (*command, error) {
 	if config.DefaultEnvName == nil {
 		config.DefaultEnvName = upperCaseFromFieldName
+	}
+
+	if config.PlaceholderFormatter == nil {
+		config.PlaceholderFormatter = placeholderFromFieldName
 	}
 
 	// commands can only be created from pointers to structs
@@ -354,9 +370,10 @@ func cmdFromStruct(name string, dest path, t reflect.Type, config *Config) (*com
 		// duplicate the entire path to avoid slice overwrites
 		subdest := dest.Child(field)
 		spec := spec{
-			dest:  subdest,
-			field: field,
-			long:  strings.ToLower(field.Name),
+			dest:      subdest,
+			field:     field,
+			long:      strings.ToLower(field.Name),
+			fieldName: field.Name,
 		}
 
 		// assign a default environment variable name
@@ -450,10 +467,8 @@ func cmdFromStruct(name string, dest path, t reflect.Type, config *Config) (*com
 		placeholder, hasPlaceholder := field.Tag.Lookup("placeholder")
 		if hasPlaceholder {
 			spec.placeholder = placeholder
-		} else if spec.long != "" {
-			spec.placeholder = strings.ToUpper(spec.long)
 		} else {
-			spec.placeholder = strings.ToUpper(spec.field.Name)
+			spec.placeholder = config.PlaceholderFormatter(spec.fieldName, spec.long)
 		}
 
 		// if this is a subcommand then we've done everything we need to do
